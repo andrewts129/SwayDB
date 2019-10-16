@@ -39,7 +39,7 @@ import ScalaMapToJavaMapOutputConverter._
  *
  * For documentation check - http://swaydb.io/tag/
  */
-case class MapIO[K, V, F <: swaydb.java.PureFunction[K, V, Return.Map[V]]](_asScala: swaydb.Map[K, V, _, swaydb.IO.ThrowableIO]) {
+case class MapIO[K, V, F](_asScala: swaydb.Map[K, V, _, swaydb.IO.ThrowableIO]) {
 
   implicit val exceptionHandler = swaydb.IO.ExceptionHandler.Throwable
 
@@ -118,13 +118,13 @@ case class MapIO[K, V, F <: swaydb.java.PureFunction[K, V, Return.Map[V]]](_asSc
     asScala.clear()
 
   def registerFunction(function: F): IO[scala.Throwable, swaydb.Done] =
-    asScala.registerFunction(PureFunction.asScala(function))
+    asScala.registerFunction(PureFunction.asScala(function.asInstanceOf[PureFunction[K, V, Return.Map[V]]]))
 
   def applyFunction(key: K, function: F): IO[scala.Throwable, swaydb.Done] =
-    asScala.applyFunction(key, PureFunction.asScala(function))
+    asScala.applyFunction(key, PureFunction.asScala(function.asInstanceOf[PureFunction[K, V, Return.Map[V]]]))
 
   def applyFunction(from: K, to: K, function: F): IO[scala.Throwable, swaydb.Done] =
-    asScala.applyFunction(from, to, PureFunction.asScala(function))
+    asScala.applyFunction(from, to, PureFunction.asScala(function.asInstanceOf[PureFunction[K, V, Return.Map[V]]]))
 
   def commit[P <: Prepare.Map[K, V, F]](prepare: java.util.List[P]): IO[scala.Throwable, swaydb.Done] =
     commit[P](prepare.iterator())
@@ -132,7 +132,10 @@ case class MapIO[K, V, F <: swaydb.java.PureFunction[K, V, Return.Map[V]]](_asSc
   def commit[P <: Prepare.Map[K, V, F]](prepare: StreamIO[P]): IO[scala.Throwable, swaydb.Done] =
     prepare
       .asScala
-      .foldLeft(ListBuffer.empty[Prepare[K, V, swaydb.PureFunction[K, V, Apply.Map[V]]]])(_ += Prepare.toScala(_))
+      .foldLeft(ListBuffer.empty[Prepare[K, V, swaydb.PureFunction[K, V, Apply.Map[V]]]]) {
+        case (scalaPrepares, prepare) =>
+          scalaPrepares += Prepare.toScala(prepare.asInstanceOf[Prepare.Map[K, V, PureFunction[K, V, Return.Map[V]]]])
+      }
       .flatMap {
         statements =>
           asScala commit statements
@@ -142,7 +145,18 @@ case class MapIO[K, V, F <: swaydb.java.PureFunction[K, V, Return.Map[V]]](_asSc
     val prepareStatements =
       prepare
         .asScala
-        .foldLeft(ListBuffer.empty[Prepare[K, V, swaydb.PureFunction[K, V, Apply.Map[V]]]])(_ += Prepare.toScala(_))
+        .foldLeft(ListBuffer.empty[Prepare[K, V, swaydb.PureFunction[K, V, Apply.Map[V]]]]) {
+          case (scalaPrepares, prepare) =>
+            val typedPrepare = prepare.asInstanceOf[Prepare.Map[K, V, PureFunction[K, V, Return.Map[V]]]]
+            typedPrepare match {
+              case _: Prepare.PutInMap[_, _, _] | _: Prepare.RemoveFromMap[_, _, _] | _: Prepare.UpdateInMap[_, _, _] =>
+                scalaPrepares += Prepare.toScala(typedPrepare)
+
+              case Prepare.ApplyFunctionInMap(from, to, function) =>
+                ???
+            }
+            scalaPrepares += Prepare.toScala(prepare.asInstanceOf[Prepare.Map[K, V, PureFunction[K, V, Return.Map[V]]]])
+        }
 
     asScala commit prepareStatements
   }

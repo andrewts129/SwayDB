@@ -36,12 +36,12 @@ object Return {
   /**
    * Return types for [[swaydb.java.PureFunction]] used in [[swaydb.java.MapIO]]
    */
-  sealed trait Map[V] extends Return[V]
+  sealed trait Map[+V] extends Return[V]
 
   /**
    * Return types for [[swaydb.java.PureFunction]] used in [[swaydb.java.SetIO]]
    */
-  sealed trait Set[V] extends Return[V]
+  sealed trait Set[+V] extends Return[V]
 
   def nothing[V](): Nothing[V] =
     Nothing[V]()

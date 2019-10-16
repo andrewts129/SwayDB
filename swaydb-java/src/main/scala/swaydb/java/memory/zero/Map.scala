@@ -38,12 +38,12 @@ import scala.reflect.ClassTag
 
 object Map {
 
-  class Config[K, V, F <: swaydb.java.PureFunction[K, V, Return.Map[V]], SF](@BeanProperty var mapSize: Int = 4.mb,
-                                                                             @BeanProperty var acceleration: JavaFunction[LevelZeroMeter, Accelerator] = (Accelerator.noBrakes() _).asJava,
-                                                                             @BeanProperty var comparator: IO[Comparator[ByteSlice], Comparator[K]] = IO.leftNeverException[Comparator[ByteSlice], Comparator[K]](swaydb.java.SwayDB.defaultComparator),
-                                                                             keySerializer: Serializer[K],
-                                                                             valueSerializer: Serializer[V],
-                                                                             functionClassTag: ClassTag[SF]) {
+  class Config[K, V, F, SF](@BeanProperty var mapSize: Int = 4.mb,
+                            @BeanProperty var acceleration: JavaFunction[LevelZeroMeter, Accelerator] = (Accelerator.noBrakes() _).asJava,
+                            @BeanProperty var comparator: IO[Comparator[ByteSlice], Comparator[K]] = IO.leftNeverException[Comparator[ByteSlice], Comparator[K]](swaydb.java.SwayDB.defaultComparator),
+                            keySerializer: Serializer[K],
+                            valueSerializer: Serializer[V],
+                            functionClassTag: ClassTag[SF]) {
 
     implicit def scalaKeyOrder: KeyOrder[Slice[Byte]] = KeyOrderConverter.toScalaKeyOrder(comparator, keySerializer)
 
@@ -75,8 +75,8 @@ object Map {
     )
 
   def config[K, V](keySerializer: JavaSerializer[K],
-                   valueSerializer: JavaSerializer[V]): Config[K, V, swaydb.java.PureFunction.Disabled[K, V, Return.Map[V]], Void] =
-    new Config[K, V, swaydb.java.PureFunction.Disabled[K, V, Return.Map[V]], Void](
+                   valueSerializer: JavaSerializer[V]): Config[K, V, Void, Void] =
+    new Config[K, V, Void, Void](
       keySerializer = SerializerConverter.toScala(keySerializer),
       valueSerializer = SerializerConverter.toScala(valueSerializer),
       functionClassTag = ClassTag.Nothing.asInstanceOf[ClassTag[Void]]
