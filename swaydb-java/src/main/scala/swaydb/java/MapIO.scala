@@ -41,6 +41,8 @@ import ScalaMapToJavaMapOutputConverter._
  */
 case class MapIO[K, V, F](_asScala: swaydb.Map[K, V, _, swaydb.IO.ThrowableIO]) {
 
+  private val areFuntionsDisabled = classOf[F] == Void.TYPE
+
   implicit val exceptionHandler = swaydb.IO.ExceptionHandler.Throwable
 
   private val asScala: swaydb.Map[K, V, swaydb.PureFunction[K, V, Apply.Map[V]], ThrowableIO] =
@@ -128,6 +130,11 @@ case class MapIO[K, V, F](_asScala: swaydb.Map[K, V, _, swaydb.IO.ThrowableIO]) 
 
   def commit[P <: Prepare.Map[K, V, F]](prepare: java.util.List[P]): IO[scala.Throwable, swaydb.Done] =
     commit[P](prepare.iterator())
+
+  private def filterPrepare[P <: Prepare.Map[K, V, F]](prepare: swaydb.Stream[P, swaydb.IO.ThrowableIO]): Iterable[P] = {
+
+    ???
+  }
 
   def commit[P <: Prepare.Map[K, V, F]](prepare: StreamIO[P]): IO[scala.Throwable, swaydb.Done] =
     prepare

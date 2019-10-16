@@ -220,10 +220,6 @@ abstract class MapTest extends TestBase implements JavaEventually {
 
     assertEquals(8, map.size().get());
 
-    final Prepare.ApplyFunctionInMap<Integer, Integer, Void> integerObjectObjectApplyFunctionInMap = Prepare.applyFunctionInMap(1, null);
-    map.commit(Arrays.asList(integerObjectObjectApplyFunctionInMap)).get();
-
-
     IntStream
       .rangeClosed(1, 8)
       .forEach(
